@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>雨课堂作业面板</title>
+    <link rel="stylesheet" href="/style.css" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>📚</text></svg>" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="logo">📚</span>
+        <div>
+          <h1>雨课堂作业面板</h1>
+          <p class="subtitle">课程 · 作业 · 一站式作答</p>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div class="user-chip" id="userChip">未登录</div>
+        <button class="btn ghost" id="refreshBtn" title="刷新数据"><span class="btn-spin" aria-hidden="true"></span><span>刷新</span></button>
+        <button class="btn ghost" id="settingsBtn" title="设置">设置</button>
+      </div>
+    </header>
+
+    <main>
+      <section id="loginNotice" class="notice hidden">
+        <h2>需要先登录雨课堂</h2>
+        <p>我已为你打开雨课堂登录页（Chrome 窗口）。请用手机微信扫一扫登录，完成后回到这里点击“刷新”。</p>
+        <button class="btn primary" id="openLoginBtn">重新打开登录页</button>
+        <button class="btn primary" id="refreshLoginBtn"><span class="btn-spin" aria-hidden="true"></span><span>我已扫码，刷新</span></button>
+      </section>
+
+      <section id="dashboard" class="hidden">
+        <div class="stats" id="stats"></div>
+        <div class="filters" id="semesterFilters"></div>
+        <div class="filters" id="statusFilters"></div>
+        <div class="sortbar">
+          <span class="sort-label">排序</span>
+          <select id="sortSelect">
+            <option value="deadline">按截止日期</option>
+            <option value="publish">按发布日期</option>
+            <option value="score">按完成分数</option>
+          </select>
+        </div>
+        <div class="filters" id="courseFilters"></div>
+        <div class="list" id="homeworkList"></div>
+      </section>
+
+      <section id="paperView" class="hidden">
+        <button class="btn ghost" id="backBtn">← 返回作业列表</button>
+        <div id="paperContent"></div>
+      </section>
+
+      <section id="settingsView" class="hidden">
+        <h2>设置</h2>
+        <label>
+          雨课堂服务器
+          <select id="domainSelect">
+            <option value="www.yuketang.cn">雨课堂（www.yuketang.cn）</option>
+            <option value="changjiang.yuketang.cn">长江雨课堂</option>
+            <option value="pro.yuketang.cn">荷塘雨课堂</option>
+            <option value="huanghe.yuketang.cn">黄河雨课堂</option>
+          </select>
+        </label>
+        <button class="btn primary" id="saveSettingsBtn">保存</button>
+        <button class="btn ghost" id="closeSettingsBtn">返回</button>
+      </section>
+    </main>
+
+    <footer class="footer">数据仅保存在本机 · 登录会话保存在浏览器配置中</footer>
+    <script src="/app.js"></script>
+  </body>
+</html>

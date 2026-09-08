@@ -1,0 +1,14 @@
+{
+  "name": "yuketang-homework-dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "description": "本地雨课堂作业面板：汇总课程与作业，查看并作答",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=21"
+  }
+}
+
