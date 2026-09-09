@@ -157,11 +157,11 @@ async function ensureDashboardTab() {
   return refreshed.find((p) => p.id === created.targetId) || null;
 }
 
-// 统一由本服务管理 Chrome：只启动或复用一次，并在同一个窗口里
+// 统一由本服务管理浏览器：只启动或复用一次，并在同一个窗口里
 // 保证同时存在“雨课堂登录页”和“作业面板”两个标签页，避免弹出多个浏览器窗口。
 async function ensureBrowserAndTabs() {
   if (!(await cdp.debugEndpoints(cfg.debugPort))) {
-    await cdp.ensureChrome(cfg.debugPort, PROFILE_DIR, `https://${cfg.domain}/web`);
+    await cdp.ensureBrowser(cfg.debugPort, PROFILE_DIR, `https://${cfg.domain}/web`);
   }
   const info = await cdp.debugEndpoints(cfg.debugPort);
   if (!info) throw new Error("无法连接浏览器调试通道");
@@ -216,7 +216,7 @@ async function getSession() {
   if (!cookies.length && !(await cdp.debugEndpoints(cfg.debugPort))) {
     // 登录窗口被关闭时自动重新拉起（登录状态保存在独立配置里）
     try {
-      await cdp.ensureChrome(cfg.debugPort, PROFILE_DIR, `https://${cfg.domain}/m/v2`);
+      await cdp.ensureBrowser(cfg.debugPort, PROFILE_DIR, `https://${cfg.domain}/m/v2`);
       cookies = await getSessionCookies();
     } catch (e) {}
   }
@@ -427,13 +427,13 @@ async function handleApi(req, res, urlPath, method) {
     }
   }
 
-  // 在专属 Chrome 窗口中打开官方作答页
+  // 在专属浏览器窗口中打开官方作答页
   const m3 = urlPath.match(/^\/api\/homeworks\/([^/]+)\/open$/);
   if (method === "POST" && m3) {
     try {
       const kind = new URL(req.url, "http://localhost").searchParams.get("kind") || "card";
       if (!(await cdp.debugEndpoints(cfg.debugPort))) {
-        await cdp.ensureChrome(cfg.debugPort, PROFILE_DIR, `https://${cfg.domain}/m/v2`);
+        await cdp.ensureBrowser(cfg.debugPort, PROFILE_DIR, `https://${cfg.domain}/m/v2`);
       }
       const target = await getPageTarget();
       if (!target) return json(res, 502, { error: "未找到已登录的雨课堂页面" });
@@ -497,7 +497,7 @@ async function handleApi(req, res, urlPath, method) {
   if (method === "POST" && urlPath === "/api/login/open") {
     try {
       if (!(await cdp.debugEndpoints(cfg.debugPort))) {
-        await cdp.ensureChrome(cfg.debugPort, PROFILE_DIR, `https://${cfg.domain}/web`);
+        await cdp.ensureBrowser(cfg.debugPort, PROFILE_DIR, `https://${cfg.domain}/web`);
       }
       const target = await getPageTarget();
       if (target && pageClient) {
@@ -509,7 +509,7 @@ async function handleApi(req, res, urlPath, method) {
     }
   }
 
-  // 供 start.bat 在服务已运行时复用：确保同一个 Chrome 窗口里存在两个标签页
+  // 供 start.bat 在服务已运行时复用：确保同一个浏览器窗口里存在两个标签页
   if (method === "POST" && urlPath === "/api/browser/open") {
     try {
       await ensureBrowserAndTabs();
@@ -781,7 +781,11 @@ async function start() {
 
   try {
     await ensureBrowserAndTabs();
-    console.log("[启动] Chrome 已就绪（一个窗口、两个标签页：雨课堂 + 作业面板）");
+    const info = await cdp.debugEndpoints(cfg.debugPort);
+    console.log(
+      "[启动] 浏览器已就绪：%s（一个窗口、两个标签页：雨课堂 + 作业面板）",
+      (info && info.Browser) || "未知内核"
+    );
   } catch (e) {
     console.warn("[警告] 浏览器未就绪：", e.message);
   }

@@ -350,7 +350,7 @@ function answerActions(paper) {
   return `
     <div class="paper-actions">
       <button class="btn ghost" id="toggleIframeBtn">${state.iframeOpen ? "收起官方作答页" : "在面板中作答"}</button>
-      <button class="btn ghost" id="openChromeBtn">在雨课堂窗口作答</button>
+      <button class="btn ghost" id="openBrowserBtn">在雨课堂窗口作答</button>
       <a class="btn ghost link" href="${escapeAttr(officialUrl)}" target="_blank" rel="noopener">浏览器新标签打开</a>
     </div>`;
 }
@@ -393,9 +393,9 @@ function bindPaperButtons() {
       renderPaper();
     };
   }
-  const openChrome = $("#openChromeBtn");
-  if (openChrome) {
-    openChrome.onclick = async () => {
+  const openBrowser = $("#openBrowserBtn");
+  if (openBrowser) {
+    openBrowser.onclick = async () => {
       const m = (state.paper && state.paper.proxyUrl ? state.paper.proxyUrl : "").match(/(?:learning_cards_detail|quiz_info)\/(\d+)/);
       if (!m) return toast("未找到作业 id");
       const kind = (state.paperMeta && state.paperMeta.kind) || "card";
