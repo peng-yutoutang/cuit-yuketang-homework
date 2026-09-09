@@ -637,6 +637,35 @@ const server = http.createServer(async (req, res) => {
 const IMG_HOST_RE =
   /^https?:\/\/(qn-sfe\.yuketang\.cn|rain-public-qn\.yuketang\.cn|qn-sx\.yuketang\.cn|qn-next\.xuetangx\.com|sfe\.ykt\.io|thirdwx\.qlogo\.cn|storagecdn\.xuetangx\.com|fe-static-yuketang\.yuketang\.cn)\//;
 
+// 内嵌官方作答页时，页面文档源是本地面板（127.0.0.1），题目图片直接请求 CDN 会
+// 因 Referer 校验失败返回 403（text/html），浏览器随后以 ERR_BLOCKED_BY_ORB 拦截，
+// 表现为“只能看到选项、看不到题干”。这里把响应里的 CDN 图片 URL 改写成本地 /img/
+// 代理地址，与下方题面预览使用同一套取图逻辑。
+// 只改写有 Referer 防盗链校验的图片 CDN；fe-static（页面脚本/样式）与微信头像域名直连正常，无需处理。
+const IMG_HOST_SRC =
+  "(?:qn-sfe\\.yuketang\\.cn|rain-public-qn\\.yuketang\\.cn|qn-sx\\.yuketang\\.cn|qn-next\\.xuetangx\\.com|sfe\\.ykt\\.io|storagecdn\\.xuetangx\\.com)";
+
+function rewriteImgUrls(text) {
+  if (!text || typeof text !== "string") return text;
+  const re = new RegExp("https?://" + IMG_HOST_SRC + "/[^\\s\"'<>\\\\]+", "g");
+  return text.replace(re, (u) => "/img/?u=" + encodeURIComponent(u));
+}
+
+// 试卷页把题目数据以 base64 内嵌在 HTML 里，需解码后改写其中的图片 URL 再编码回去。
+function rewriteQuizData(html) {
+  if (!html || typeof html !== "string") return html;
+  return html.replace(/(var\s+quizData\s*=\s*)(["'])([A-Za-z0-9+/=]+)(\2)/, (whole, prefix, quote, b64) => {
+    try {
+      const decoded = Buffer.from(b64, "base64").toString("utf8");
+      const fixed = rewriteImgUrls(decoded);
+      if (fixed === decoded) return whole;
+      return prefix + quote + Buffer.from(fixed, "utf8").toString("base64") + quote;
+    } catch (e) {
+      return whole;
+    }
+  });
+}
+
 async function handleImg(res, url) {
   const raw = url.searchParams.get("u") || "";
   if (!IMG_HOST_RE.test(raw)) {
@@ -715,8 +744,21 @@ async function handleProxy(req, res, url) {
       body: body.length ? body : undefined,
       redirect: "follow",
     });
-    const buf = Buffer.from(await upstream.arrayBuffer());
+    let buf = Buffer.from(await upstream.arrayBuffer());
     const ct = upstream.headers.get("content-type") || "application/octet-stream";
+    const ctLower = ct.toLowerCase();
+    // 作答页还会经由本代理加载自身的 CSS / JS 静态资源，其中也可能内嵌 CDN 图片
+    // URL（如 background:url(...) 或模板里的 src），因此对所有文本型响应统一改写。
+    const isText =
+      ctLower.includes("html") ||
+      ctLower.includes("json") ||
+      ctLower.includes("css") ||
+      ctLower.includes("javascript") ||
+      ctLower.includes("xml") ||
+      ctLower.startsWith("text/");
+    if (isText) {
+      buf = Buffer.from(rewriteQuizData(rewriteImgUrls(buf.toString("utf8"))), "utf8");
+    }
     res.writeHead(upstream.status, { "Content-Type": ct });
     res.end(buf);
   } catch (e) {
